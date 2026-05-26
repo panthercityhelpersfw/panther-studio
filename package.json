@@ -1,7 +1,7 @@
 {
   "name": "panther-studio",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Panther Studio - a vocal-focused desktop DAW",
   "type": "module",
   "author": "Panther Studio",
