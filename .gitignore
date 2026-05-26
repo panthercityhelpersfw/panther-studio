@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+release/
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Generated icon source (regenerate with scripts/gen-icon.cjs)
+src-tauri/app-icon.png
+
+# Editor / OS
+.claude/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.log
+*.local
+
+# Signing keys — NEVER commit
+*.key
+.tauri/

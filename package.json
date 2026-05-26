@@ -1,0 +1,48 @@
+{
+  "name": "panther-studio",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Panther Studio - a vocal-focused desktop DAW",
+  "type": "module",
+  "author": "Panther Studio",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "typecheck": "tsc --noEmit",
+    "updater:keys": "tauri signer generate --ci --write-keys .tauri/panther-updater.key",
+    "release:installer": "tauri build",
+    "release:updater": "node scripts/build-updater-release.cjs",
+    "release:manifest": "node scripts/make-latest-manifest.cjs",
+    "update:local:base": "node scripts/build-updater-release.cjs --version 0.1.0 --local",
+    "update:local:build": "node scripts/build-updater-release.cjs --version 0.1.1 --local",
+    "update:local:manifest": "node scripts/make-latest-manifest.cjs --version 0.1.1 --local",
+    "update:local:serve": "node scripts/serve-update.cjs"
+  },
+  "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "@tauri-apps/api": "^2.2.0",
+    "@tauri-apps/plugin-dialog": "^2.2.0",
+    "@tauri-apps/plugin-fs": "^2.2.0",
+    "@tauri-apps/plugin-process": "^2.2.0",
+    "@tauri-apps/plugin-updater": "^2.3.0",
+    "idb": "^8.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.2.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

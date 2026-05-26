@@ -1,0 +1,89 @@
+name: Panther Studio Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, without the leading v. Defaults to package.json."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    name: Build signed Windows updater release
+    runs-on: windows-latest
+
+    env:
+      PANTHER_GITHUB_REPOSITORY: ${{ github.repository }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve release version
+        id: release
+        shell: pwsh
+        run: |
+          $version = "${{ inputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            if ($env:GITHUB_REF_TYPE -eq "tag" -and $env:GITHUB_REF_NAME.StartsWith("v")) {
+              $version = $env:GITHUB_REF_NAME.Substring(1)
+            } else {
+              $version = (Get-Content package.json | ConvertFrom-Json).version
+            }
+          }
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
+            throw "Missing TAURI_SIGNING_PRIVATE_KEY repository secret."
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+
+      - name: Build signed updater artifacts
+        shell: pwsh
+        run: |
+          npm run release:updater -- --version "${{ steps.release.outputs.version }}" --repo "${{ github.repository }}" --tag "${{ steps.release.outputs.tag }}"
+          npm run release:manifest -- --version "${{ steps.release.outputs.version }}" --repo "${{ github.repository }}" --tag "${{ steps.release.outputs.tag }}"
+
+      - name: Publish GitHub release assets
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.release.outputs.tag }}"
+          $version = "${{ steps.release.outputs.version }}"
+          $notes = "Panther Studio $version signed Windows updater release."
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Panther Studio $version" --notes $notes --latest
+          } else {
+            gh release edit $tag --repo $env:GITHUB_REPOSITORY --title "Panther Studio $version" --notes $notes --latest
+          }
+          $assets = Get-ChildItem release/update-feed -File | ForEach-Object { $_.FullName }
+          gh release upload $tag @assets --repo $env:GITHUB_REPOSITORY --clobber
+
+      - name: Validate updater feed
+        shell: pwsh
+        run: |
+          $json = Invoke-RestMethod "https://github.com/${{ github.repository }}/releases/latest/download/latest.json"
+          if (-not $json.version -or -not $json.platforms."windows-x86_64".url -or -not $json.platforms."windows-x86_64".signature) {
+            throw "latest.json did not include version, windows-x86_64.url, and windows-x86_64.signature."
+          }
+          $json | ConvertTo-Json -Depth 8
