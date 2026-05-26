@@ -45,6 +45,10 @@ function encodeAssetName(name) {
   return encodeURIComponent(name);
 }
 
+function releaseAssetName(name) {
+  return name.replace(/\s+/g, ".");
+}
+
 function artifactKind(file) {
   const lower = file.toLowerCase();
   if (lower.endsWith(".exe")) return "nsis";
@@ -86,14 +90,15 @@ fs.mkdirSync(feedDir, { recursive: true });
 
 const artifact = artifacts[0];
 const name = path.basename(artifact);
+const assetName = releaseAssetName(name);
 const signature = fs.readFileSync(`${artifact}.sig`, "utf8").trim();
 
-fs.copyFileSync(artifact, path.join(feedDir, name));
-fs.copyFileSync(`${artifact}.sig`, path.join(feedDir, `${name}.sig`));
+fs.copyFileSync(artifact, path.join(feedDir, assetName));
+fs.copyFileSync(`${artifact}.sig`, path.join(feedDir, `${assetName}.sig`));
 
 const url = local
-  ? `http://127.0.0.1:${port}/${encodeURIComponent(name)}`
-  : `https://github.com/${repo}/releases/download/${tag}/${encodeAssetName(name)}`;
+  ? `http://127.0.0.1:${port}/${encodeURIComponent(assetName)}`
+  : `https://github.com/${repo}/releases/download/${tag}/${encodeAssetName(assetName)}`;
 
 const platforms = {
   "windows-x86_64": { signature, url },
